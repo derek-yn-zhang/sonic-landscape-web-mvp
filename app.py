@@ -6,6 +6,7 @@ import os
 import json
 import pandas as pd
 import numpy as np
+from urllib.parse import quote
 from flask import Flask, render_template, jsonify
 from functools import lru_cache
 
@@ -76,7 +77,7 @@ def load_all_data():
             'artist': safe_str(row.get('artist'), 'Unknown Artist'),
             'album': safe_str(row.get('album'), 'Unknown Album'),
             'album_art': safe_str(row.get('album_art'), ''),
-            'file_path': f"{AUDIO_BASE_URL}/{filename}",
+            'file_path': f"{AUDIO_BASE_URL}/{quote(filename)}",
             'popularity': int(safe_float(row.get('popularity'), 0)),
             'cluster': int(safe_float(row.get('cluster'), 0)),
             'pc1': round(safe_float(row['pc1']), 6),
