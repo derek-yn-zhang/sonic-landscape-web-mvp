@@ -13,10 +13,9 @@ from functools import lru_cache
 app = Flask(__name__)
 
 # Configuration
-AUDIO_BASE_URL = os.environ.get(
-    'AUDIO_BASE_URL',
-    'https://pub-e5e3662d4f2642aeba430bbac3b12024.r2.dev/audio'
-)
+AUDIO_BASE_URL = os.environ.get('AUDIO_BASE_URL')
+if not AUDIO_BASE_URL:
+    raise ValueError("AUDIO_BASE_URL environment variable is required")
 DATA_DIR = os.path.join(os.path.dirname(__file__), 'data')
 
 # Terrain feature columns used for PCA
