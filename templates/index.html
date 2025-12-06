@@ -1,0 +1,2138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sonic Landscape - Music Collection Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e8e8e8;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 300;
+            margin-bottom: 10px;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #888;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.95rem;
+            color: #e8e8e8;
+        }
+
+        .tab:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: transparent;
+        }
+
+        .view {
+            display: none;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .view.active {
+            display: block;
+        }
+
+        .plot-container {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .two-col {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        @media (max-width: 900px) {
+            .two-col {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .control-group label {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        select {
+            padding: 10px 36px 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e8e8e8;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            min-width: 140px;
+        }
+
+        select:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        select option {
+            background: #1a1a2e;
+            color: #e8e8e8;
+            padding: 10px;
+        }
+
+        .description {
+            color: #aaa;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .track-card {
+            display: none;
+            background: rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .track-card.visible {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .track-art {
+            width: 120px;
+            height: 120px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .track-info {
+            flex: 1;
+        }
+
+        .track-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .track-artist {
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .track-scores {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .score-badge {
+            padding: 6px 12px;
+            background: rgba(102, 126, 234, 0.2);
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .score-label {
+            color: #888;
+        }
+
+        .legend {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+        }
+
+        audio {
+            width: 100%;
+            margin-top: 15px;
+            border-radius: 8px;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .info-title {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        .intro-section {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .intro-section h2 {
+            font-size: 1.4rem;
+            color: #667eea;
+            margin: 30px 0 15px 0;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 8px;
+        }
+
+        .intro-section h2:first-child {
+            margin-top: 0;
+        }
+
+        .intro-section p {
+            color: #bbb;
+            line-height: 1.7;
+            font-size: 0.95rem;
+            margin-bottom: 15px;
+        }
+
+        .intro-section p strong {
+            color: #e8e8e8;
+        }
+
+        .terrain-axes {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .terrain-axis {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            padding: 12px 16px;
+            border-left: 3px solid #667eea;
+        }
+
+        .terrain-axis-name {
+            font-weight: 600;
+            color: #e8e8e8;
+            margin-bottom: 4px;
+        }
+
+        .terrain-axis-desc {
+            color: #999;
+            font-size: 0.9rem;
+        }
+
+        .pca-components {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .pca-component {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            padding: 16px;
+        }
+
+        .pca-component-header {
+            display: flex;
+            align-items: baseline;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .pca-component-name {
+            font-weight: 600;
+            color: #e8e8e8;
+            font-size: 1rem;
+        }
+
+        .pca-component-variance {
+            font-size: 0.85rem;
+            color: #667eea;
+        }
+
+        .pca-component-desc {
+            color: #999;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 8px;
+        }
+
+        .pca-spectrum {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 10px;
+            font-size: 0.85rem;
+        }
+
+        .pca-spectrum-end {
+            color: #888;
+            flex: 1;
+        }
+
+        .pca-spectrum-end.left {
+            text-align: right;
+        }
+
+        .pca-spectrum-arrow {
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        /* Playlist styles */
+        .playlist-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-input {
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            color: #e8e8e8;
+            font-size: 0.95rem;
+            font-family: inherit;
+            min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .search-input::placeholder {
+            color: #666;
+        }
+
+        .playlist-count {
+            color: #888;
+            font-size: 0.9rem;
+            margin-left: auto;
+        }
+
+        .playlist-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            gap: 14px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .playlist-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .playlist-card-art {
+            width: 80px;
+            height: 80px;
+            border-radius: 6px;
+            object-fit: cover;
+            background: rgba(255, 255, 255, 0.1);
+            flex-shrink: 0;
+        }
+
+        .playlist-card-content {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .playlist-card-main {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .playlist-card-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .playlist-card-title,
+        .playlist-card-artist {
+            white-space: nowrap;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .playlist-card-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+
+        .playlist-card-artist {
+            color: #888;
+            font-size: 0.85rem;
+            margin-bottom: 8px;
+        }
+
+        /* Scrolling text wrapper */
+        .playlist-card-title span,
+        .playlist-card-artist span {
+            display: inline-block;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            max-width: 100%;
+        }
+
+        /* Hover scroll animation for truncated text only */
+        .playlist-card:hover .playlist-card-title.is-truncated span,
+        .playlist-card:hover .playlist-card-artist.is-truncated span {
+            animation: marquee-scroll 4s linear infinite;
+            animation-delay: 0.5s;
+            text-overflow: clip;
+            overflow: visible;
+        }
+
+        @keyframes marquee-scroll {
+            0% { transform: translateX(0); }
+            10% { transform: translateX(0); }
+            90% { transform: translateX(calc(-100% + 150px)); }
+            100% { transform: translateX(calc(-100% + 150px)); }
+        }
+
+        /* Cluster tag */
+        .playlist-card-cluster {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 10px;
+            background: rgba(102, 126, 234, 0.2);
+            width: fit-content;
+            margin-bottom: 8px;
+        }
+
+        .playlist-card-cluster-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        /* Meta row: cluster tag + radar inline */
+        .playlist-card-meta {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .playlist-card-meta .playlist-card-cluster {
+            margin-bottom: 0;
+        }
+
+        /* Radar chart inline */
+        .radar-container {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .mini-radar {
+            width: 65px;
+            height: 65px;
+            cursor: pointer;
+        }
+
+        /* Radar tooltip */
+        .radar-tooltip {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(20, 20, 35, 0.98);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 10px 12px;
+            min-width: 140px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+            z-index: 100;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .radar-container:hover .radar-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .radar-tooltip-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 3px 0;
+            font-size: 0.8rem;
+        }
+
+        .radar-tooltip-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .radar-tooltip-label {
+            color: #aaa;
+            flex: 1;
+        }
+
+        .radar-tooltip-value {
+            color: #e8e8e8;
+            font-weight: 500;
+        }
+
+        /* Custom audio player - spans full card width */
+        .audio-player {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: calc(100% + 80px + 14px);
+            margin-left: calc(-80px - 14px);
+            margin-top: auto;
+            padding-top: 12px;
+            height: 28px;
+        }
+
+        .audio-player audio {
+            display: none;
+        }
+
+        .audio-play-btn {
+            width: 28px;
+            height: 28px;
+            border: none;
+            background: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .audio-play-btn:hover svg {
+            fill: #8a9ff0;
+        }
+
+        .audio-play-btn svg {
+            width: 14px;
+            height: 14px;
+            fill: #667eea;
+            transition: fill 0.15s;
+        }
+
+        .audio-play-btn .pause-icon {
+            display: none;
+        }
+
+        .audio-player.playing .audio-play-btn .play-icon {
+            display: none;
+        }
+
+        .audio-player.playing .audio-play-btn .pause-icon {
+            display: block;
+        }
+
+        .audio-progress-container {
+            flex: 1;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .audio-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            width: 0%;
+            position: relative;
+        }
+
+        /* Scrubber handle */
+        .audio-progress-handle {
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+
+        .audio-progress-container:hover .audio-progress-handle,
+        .audio-player.playing .audio-progress-handle,
+        .audio-player.scrubbing .audio-progress-handle {
+            opacity: 1;
+        }
+
+        .audio-progress-container:hover .audio-progress-bar {
+            background: linear-gradient(90deg, #7b8ff0, #8a5db5);
+        }
+
+        .audio-time {
+            font-size: 0.75rem;
+            color: #888;
+            min-width: 36px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+            flex-shrink: 0;
+        }
+
+        /* Virtual scrolling styles */
+        .playlist-grid {
+            position: relative;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .playlist-spacer {
+            position: relative;
+            width: 100%;
+        }
+
+        .playlist-viewport {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 16px;
+        }
+
+        /* Loading overlay */
+        #loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        
+        .loading-content {
+            text-align: center;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255,255,255,0.1);
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .loading-content p {
+            color: #888;
+            font-size: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading overlay -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p>Loading track data...</p>
+        </div>
+    </div>
+    
+    <div class="container">
+        <header>
+            <h1>Sonic Landscape</h1>
+            <p class="subtitle">Interactive visualization of your music collection's sonic character</p>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value">245</div>
+                    <div class="stat-label">Tracks</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Clusters</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Dimensions</div>
+                </div>
+            </div>
+        </header>
+
+        <div class="tabs">
+            <div class="tab active" data-view="overview">Overview</div>
+            <div class="tab" data-view="radar">Cluster Profiles</div>
+            <div class="tab" data-view="pca">PCA Biplot</div>
+            <div class="tab" data-view="loadings">Component Loadings</div>
+            <div class="tab" data-view="terrain">Scatterplots</div>
+            <div class="tab" data-view="playlist">Playlist</div>
+        </div>
+
+        <!-- Overview View -->
+        <div id="overview-view" class="view active">
+            <div class="intro-section">
+                <h2>About This Analysis</h2>
+                <p>
+                    This visualization explores your music collection through five perceptual dimensions that
+                    describe the sonic character of each track. Each axis captures a distinct quality of how
+                    music sounds and feels, derived from audio signal analysis and research-backed acoustic features.
+                </p>
+                <p>
+                    Using Principal Component Analysis (PCA), we discovered that these five axes actually
+                    capture <strong>four relatively independent sonic qualities</strong> that explain most of the
+                    variation in your collection. Machine learning clustering then groups tracks by their acoustic
+                    similarities.
+                </p>
+
+                <h2>The Five Axes</h2>
+                <div class="terrain-axes">
+                    <div class="terrain-axis">
+                        <div class="terrain-axis-name">Warmth</div>
+                        <div class="terrain-axis-desc">Tonal color from bright/cold to warm/rich. Derived from spectral centroid and timbral warmth models.</div>
+                    </div>
+                    <div class="terrain-axis">
+                        <div class="terrain-axis-name">Spatiality</div>
+                        <div class="terrain-axis-desc">Sense of space from intimate to expansive. Measured through stereo width and channel correlation.</div>
+                    </div>
+                    <div class="terrain-axis">
+                        <div class="terrain-axis-name">Distance</div>
+                        <div class="terrain-axis-desc">Perceived proximity from close/present to far/diffuse. Based on spectral rolloff and dynamic range as proxies for direct-to-reverberant ratio.</div>
+                    </div>
+                    <div class="terrain-axis">
+                        <div class="terrain-axis-name">Density</div>
+                        <div class="terrain-axis-desc">Textural fullness from sparse to thick/layered. Combines spectral bandwidth, flatness, and timbral depth.</div>
+                    </div>
+                    <div class="terrain-axis">
+                        <div class="terrain-axis-name">Groundedness</div>
+                        <div class="terrain-axis-desc">Rhythmic foundation from floating/ambient to anchored/driving. Primarily pulse clarity and beat salience, not just bass presence.</div>
+                    </div>
+                </div>
+
+                <h2>The Sonic Dimensions</h2>
+                <p>
+                    PCA reveals that these 5 axes actually capture 4 relatively independent qualities.
+                    Here's what they mean musically:
+                </p>
+                <div class="pca-components">
+                    <div class="pca-component">
+                        <div class="pca-component-header">
+                            <span class="pca-component-name">PC1: Warmth-Density Spectrum</span>
+                            <span class="pca-component-variance">52% of variation</span>
+                        </div>
+                        <div class="pca-component-desc">
+                            The biggest differentiator in this collection. Are you in the mood for something lush and open, or something textured and intense?
+                        </div>
+                        <div class="pca-spectrum">
+                            <span class="pca-spectrum-end left">warm, distant, sparse</span>
+                            <span class="pca-spectrum-arrow">&#8596;</span>
+                            <span class="pca-spectrum-end">cool, close, dense</span>
+                        </div>
+                    </div>
+                    <div class="pca-component">
+                        <div class="pca-component-header">
+                            <span class="pca-component-name">PC2: Spatial Character</span>
+                            <span class="pca-component-variance">21% of variation</span>
+                        </div>
+                        <div class="pca-component-desc">
+                            Whether a track feels "out there" in a vast space or "right here" in front of you.
+                        </div>
+                        <div class="pca-spectrum">
+                            <span class="pca-spectrum-end left">spacious, cool, floating</span>
+                            <span class="pca-spectrum-arrow">&#8596;</span>
+                            <span class="pca-spectrum-end">intimate, warm, grounded</span>
+                        </div>
+                    </div>
+                    <div class="pca-component">
+                        <div class="pca-component-header">
+                            <span class="pca-component-name">PC3: Rhythmic Space</span>
+                            <span class="pca-component-variance">16% of variation</span>
+                        </div>
+                        <div class="pca-component-desc">
+                            Groundedness and spatiality load together here - can a track be groovy AND expansive?
+                        </div>
+                        <div class="pca-spectrum">
+                            <span class="pca-spectrum-end left">rhythmic + wide stereo</span>
+                            <span class="pca-spectrum-arrow">&#8596;</span>
+                            <span class="pca-spectrum-end">ambient + focused</span>
+                        </div>
+                    </div>
+                    <div class="pca-component">
+                        <div class="pca-component-header">
+                            <span class="pca-component-name">PC4: Textural Complexity</span>
+                            <span class="pca-component-variance">8% of variation</span>
+                        </div>
+                        <div class="pca-component-desc">
+                            Almost purely density - how layered and complex the sound is, independent of the other qualities.
+                        </div>
+                        <div class="pca-spectrum">
+                            <span class="pca-spectrum-end left">sparse, minimal</span>
+                            <span class="pca-spectrum-arrow">&#8596;</span>
+                            <span class="pca-spectrum-end">dense, layered</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PCA Biplot View -->
+        <div id="pca-view" class="view">
+            <p class="description">
+                Principal Component Analysis reduces 5 dimensions to 2 for visualization.
+                PC1 explains 52.3% of variance, PC2 explains 20.7%.
+                Arrows show how each axis contributes to the principal components.
+            </p>
+            <div class="plot-container" style="padding: 5px;">
+                <div id="pca-plot" style="height: 600px; width: 100%;"></div>
+            </div>
+            <div class="legend" id="cluster-legend"></div>
+            <div id="track-card-pca" class="track-card"></div>
+        </div>
+
+        <!-- Radar Chart View -->
+        <div id="radar-view" class="view">
+            <p class="description">
+                Radar charts show each cluster's profile across all five terrain dimensions.
+                This reveals what makes each cluster distinct - where it scores high and low on each axis.
+            </p>
+            <div class="plot-container" style="padding: 5px;">
+                <div id="radar-plot" style="height: 550px; width: 100%;"></div>
+            </div>
+            <div class="legend" id="radar-legend"></div>
+            <div class="info-panel">
+                <h3 class="info-title">Cluster Characteristics</h3>
+                <div id="cluster-characteristics"></div>
+            </div>
+        </div>
+
+        <!-- Component Loadings View -->
+        <div id="loadings-view" class="view">
+            <p class="description">
+                Component loadings show how each axis contributes to the principal components.
+                Positive values indicate positive correlation, negative values indicate inverse correlation.
+            </p>
+            <div class="plot-container" style="padding: 5px;">
+                <div id="loadings-bar" style="height: 400px; width: 100%;"></div>
+            </div>
+            <div class="legend" id="loadings-legend"></div>
+            <div class="plot-container" style="padding: 5px;">
+                <div id="variance-bar" style="height: 400px; width: 100%;"></div>
+            </div>
+            <div class="legend" id="variance-legend"></div>
+            <div class="info-panel">
+                <h3 class="info-title">Component Interpretation</h3>
+                <div id="component-interpretation"></div>
+            </div>
+        </div>
+
+        <!-- Scatterplot View -->
+        <div id="terrain-view" class="view">
+            <p class="description">
+                Tracks are grouped into 2 clusters based on their sonic profiles.
+                Select different axis combinations to explore the clusters. X markers show cluster centroids.
+            </p>
+            <div class="controls">
+                <div class="control-group">
+                    <label>X-Axis:</label>
+                    <select id="terrain-x-axis">
+                        <option value="warmth" selected>Warmth</option>
+                        <option value="spatiality">Spatiality</option>
+                        <option value="distance">Distance</option>
+                        <option value="density">Density</option>
+                        <option value="groundedness">Groundedness</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Y-Axis:</label>
+                    <select id="terrain-y-axis">
+                        <option value="warmth">Warmth</option>
+                        <option value="spatiality" selected>Spatiality</option>
+                        <option value="distance">Distance</option>
+                        <option value="density">Density</option>
+                        <option value="groundedness">Groundedness</option>
+                    </select>
+                </div>
+            </div>
+            <div class="plot-container" style="padding: 5px;">
+                <div id="terrain-scatter" style="height: 600px; width: 100%;"></div>
+            </div>
+            <div class="legend" id="terrain-legend"></div>
+            <div id="track-card-terrain" class="track-card"></div>
+        </div>
+
+        <!-- Playlist View -->
+        <div id="playlist-view" class="view">
+            <div class="playlist-controls">
+                <div class="control-group">
+                    <input type="text" id="playlist-search" placeholder="Search tracks or artists..." class="search-input">
+                </div>
+                <div class="control-group">
+                    <label>Sort by:</label>
+                    <select id="playlist-sort">
+                        <option value="name-asc">Name (A-Z)</option>
+                        <option value="name-desc">Name (Z-A)</option>
+                        <option value="artist-asc">Artist (A-Z)</option>
+                        <option value="artist-desc">Artist (Z-A)</option>
+                        <option value="warmth-desc">Warmth (High-Low)</option>
+                        <option value="warmth-asc">Warmth (Low-High)</option>
+                        <option value="spatiality-desc">Spatiality (High-Low)</option>
+                        <option value="spatiality-asc">Spatiality (Low-High)</option>
+                        <option value="distance-desc">Distance (High-Low)</option>
+                        <option value="distance-asc">Distance (Low-High)</option>
+                        <option value="density-desc">Density (High-Low)</option>
+                        <option value="density-asc">Density (Low-High)</option>
+                        <option value="groundedness-desc">Groundedness (High-Low)</option>
+                        <option value="groundedness-asc">Groundedness (Low-High)</option>
+                    </select>
+                </div>
+                <div class="control-group">
+                    <label>Cluster:</label>
+                    <select id="playlist-cluster">
+                        <option value="all">All Clusters</option>
+                    </select>
+                </div>
+                <div class="playlist-count">
+                    <span id="playlist-showing">0</span> tracks
+                </div>
+            </div>
+            <div id="playlist-grid" class="playlist-grid"></div>
+        </div>
+    </div>
+    <script>
+        // Data variables - populated from API
+        let tracks = [];
+        let loadings = {};
+        let variance = {};
+        let centroids = {};
+        let terrainCols = [];
+        let clusterNames = {};
+        let clusterDescriptions = {};
+
+        // Loading state
+        let dataLoaded = false;
+
+        // Centralized audio manager - ensures only one track plays at a time
+        const AudioManager = {
+            currentAudio: null,
+            currentTrackId: null,
+
+            play(audioElement, trackId) {
+                // Stop any currently playing audio first
+                if (this.currentAudio && this.currentAudio !== audioElement) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                }
+                this.currentAudio = audioElement;
+                this.currentTrackId = trackId;
+            },
+
+            stop() {
+                if (this.currentAudio) {
+                    this.currentAudio.pause();
+                    this.currentAudio.currentTime = 0;
+                    this.currentAudio = null;
+                    this.currentTrackId = null;
+                }
+            },
+
+            isPlaying(trackId) {
+                return this.currentTrackId === trackId &&
+                       this.currentAudio &&
+                       !this.currentAudio.paused;
+            }
+        };
+
+        // Fetch all data from the API
+        async function loadData() {
+            try {
+                console.log('loadData: starting fetch...');
+                const response = await fetch('/api/data');
+                console.log('loadData: fetch complete, status:', response.status);
+                if (!response.ok) throw new Error('Failed to load data');
+
+                console.log('loadData: parsing JSON...');
+                const data = await response.json();
+                console.log('loadData: JSON parsed, tracks:', data.tracks?.length);
+
+                tracks = data.tracks;
+                loadings = data.loadings;
+                variance = data.variance;
+                centroids = data.centroids;
+                terrainCols = data.terrain_cols;
+                clusterNames = data.cluster_names;
+                clusterDescriptions = data.cluster_descriptions;
+
+                dataLoaded = true;
+                console.log('loadData: data assigned to globals');
+
+                // Update stats in header
+                document.querySelectorAll('.stat-value').forEach(el => {
+                    if (el.closest('.stat')?.querySelector('.stat-label')?.textContent.includes('Tracks')) {
+                        el.textContent = tracks.length;
+                    } else if (el.closest('.stat')?.querySelector('.stat-label')?.textContent.includes('Clusters')) {
+                        el.textContent = data.n_clusters;
+                    }
+                });
+                console.log('loadData: stats updated');
+
+                // Hide loading overlay
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.log('loadData: complete!');
+
+                return data;
+            } catch (error) {
+                console.error('loadData ERROR:', error);
+                console.error('Error stack:', error.stack);
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.innerHTML = '<div class="loading-content"><p>Error loading data. Please refresh the page.</p><p style="font-size:0.8rem;color:#666;margin-top:10px;">Check console for details</p></div>';
+                }
+                throw error;
+            }
+        }
+
+        const clusterColors = [
+            '#667eea', '#f093fb', '#4facfe', '#43e97b', '#fa709a',
+            '#fee140', '#30cfd0', '#a8edea', '#ffecd2', '#fcb69f'
+        ];
+
+        // Plotly layout defaults
+        const darkLayout = {
+            paper_bgcolor: 'rgba(0,0,0,0)',
+            plot_bgcolor: 'rgba(0,0,0,0.2)',
+            font: { color: '#e8e8e8', family: '-apple-system, BlinkMacSystemFont, sans-serif' },
+            margin: { t: 40, r: 20, b: 50, l: 60 },
+            xaxis: {
+                gridcolor: 'rgba(255,255,255,0.1)',
+                zerolinecolor: 'rgba(255,255,255,0.2)'
+            },
+            yaxis: {
+                gridcolor: 'rgba(255,255,255,0.1)',
+                zerolinecolor: 'rgba(255,255,255,0.2)'
+            }
+        };
+
+        // Track which views have been initialized (lazy loading)
+        const viewsInitialized = { pca: false, radar: false, loadings: false, terrain: false, playlist: false };
+
+        // Axis colors for the visual bars
+        const axisColors = {
+            warmth: '#f59e0b',
+            spatiality: '#3b82f6',
+            distance: '#8b5cf6',
+            density: '#ef4444',
+            groundedness: '#10b981'
+        };
+
+        // Tab switching with lazy plot initialization
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const viewName = this.dataset.view;
+
+                // Stop any playing audio when switching tabs
+                AudioManager.stop();
+
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+
+                this.classList.add('active');
+                document.getElementById(viewName + '-view').classList.add('active');
+
+                // Initialize plots on first visit (when container is visible)
+                setTimeout(() => {
+                    if (viewName === 'pca' && !viewsInitialized.pca) {
+                        createPCABiplot();
+                        viewsInitialized.pca = true;
+                    } else if (viewName === 'radar' && !viewsInitialized.radar) {
+                        createRadarChart();
+                        viewsInitialized.radar = true;
+                    } else if (viewName === 'loadings' && !viewsInitialized.loadings) {
+                        createLoadingsView();
+                        viewsInitialized.loadings = true;
+                    } else if (viewName === 'terrain' && !viewsInitialized.terrain) {
+                        updateTerrainScatter();
+                        viewsInitialized.terrain = true;
+                    } else if (viewName === 'playlist' && !viewsInitialized.playlist) {
+                        initPlaylist();
+                        viewsInitialized.playlist = true;
+                    }
+                }, 10);
+            });
+        });
+
+        // Show track card
+        function showTrackCard(track, containerId) {
+            const container = document.getElementById(containerId);
+            const hasArt = track.album_art && track.album_art.length > 0;
+            const hasAudio = track.file_path && track.file_path.length > 0;
+
+            container.innerHTML = `
+                ${hasArt ? `<img class="track-art" src="${track.album_art}" onerror="this.style.display='none'" alt="">` : ''}
+                <div class="track-info">
+                    <div class="track-name">${track.name}</div>
+                    <div class="track-artist">${track.artist}${track.album ? ' - ' + track.album : ''}</div>
+                    <div class="track-scores">
+                        <span class="score-badge"><span class="score-label">Warmth:</span> ${track.warmth.toFixed(1)}</span>
+                        <span class="score-badge"><span class="score-label">Spatiality:</span> ${track.spatiality.toFixed(1)}</span>
+                        <span class="score-badge"><span class="score-label">Distance:</span> ${track.distance.toFixed(1)}</span>
+                        <span class="score-badge"><span class="score-label">Density:</span> ${track.density.toFixed(1)}</span>
+                        <span class="score-badge"><span class="score-label">Groundedness:</span> ${track.groundedness.toFixed(1)}</span>
+                        <span class="score-badge" style="background: ${clusterColors[track.cluster]}33">
+                            <span class="score-label">Cluster:</span> ${clusterNames[track.cluster] || 'Cluster ' + track.cluster}
+                        </span>
+                    </div>
+                    ${hasAudio ? `<audio controls src="${track.file_path}"></audio>` : ''}
+                </div>
+            `;
+            container.classList.add('visible');
+        }
+
+        // PCA Biplot
+        function createPCABiplot() {
+            const clusterIds = [...new Set(tracks.map(t => t.cluster))].sort((a,b) => a-b);
+            const tracesByCluster = clusterIds.map(clusterId => {
+                const clusterTracks = tracks.filter(t => t.cluster === clusterId);
+                return {
+                    x: clusterTracks.map(t => t.pc1),
+                    y: clusterTracks.map(t => t.pc2),
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: clusterNames[clusterId] || `Cluster ${clusterId}`,
+                    text: clusterTracks.map(t => `${t.name}<br>${t.artist}`),
+                    customdata: clusterTracks,
+                    marker: {
+                        size: 10,
+                        color: clusterColors[clusterId],
+                        opacity: 0.7,
+                        line: { width: 1, color: 'rgba(255,255,255,0.3)' }
+                    },
+                    hovertemplate: '%{text}<extra></extra>'
+                };
+            });
+
+            // Loading arrows
+            const arrowTraces = [];
+            const scale = 3;
+
+            loadings.features.forEach((feat, i) => {
+                const x = loadings.pc1[i] * scale;
+                const y = loadings.pc2[i] * scale;
+
+                arrowTraces.push({
+                    x: [0, x],
+                    y: [0, y],
+                    mode: 'lines+text',
+                    type: 'scatter',
+                    line: { color: '#ff6b6b', width: 2 },
+                    text: ['', feat],
+                    textposition: 'top center',
+                    textfont: { size: 11, color: '#ff6b6b' },
+                    hoverinfo: 'skip',
+                    showlegend: false
+                });
+            });
+
+            const layout = {
+                ...darkLayout,
+                title: 'PCA Biplot: Tracks in Principal Component Space',
+                xaxis: { ...darkLayout.xaxis, title: `PC1 (${variance.variance[0].toFixed(1)}% variance)` },
+                yaxis: { ...darkLayout.yaxis, title: `PC2 (${variance.variance[1].toFixed(1)}% variance)` },
+                showlegend: false,
+                hovermode: 'closest',
+                autosize: true,
+                margin: { t: 50, r: 30, b: 60, l: 60 }
+            };
+
+            Plotly.newPlot('pca-plot', [...tracesByCluster, ...arrowTraces], layout, { responsive: true });
+
+            document.getElementById('pca-plot').on('plotly_click', function(data) {
+                if (data.points[0].customdata) {
+                    showTrackCard(data.points[0].customdata, 'track-card-pca');
+                }
+            });
+
+            // Build legend
+            const legendHtml = clusterIds.map(id =>
+                `<div class="legend-item">
+                    <div class="legend-color" style="background: ${clusterColors[id]}"></div>
+                    <span>${clusterNames[id] || 'Cluster ' + id}</span>
+                </div>`
+            ).join('');
+            document.getElementById('cluster-legend').innerHTML = legendHtml;
+        }
+
+        // Radar Chart for Cluster Profiles
+        function createRadarChart() {
+            const clusterIds = Object.keys(centroids).map(Number).sort((a,b) => a-b);
+            const axes = ['warmth', 'spatiality', 'distance', 'density', 'groundedness'];
+            const axisLabels = axes.map(a => a.charAt(0).toUpperCase() + a.slice(1));
+
+            const traces = clusterIds.map(clusterId => {
+                const centroid = centroids[String(clusterId)];
+                const values = axes.map(axis => centroid[axis]);
+                // Close the polygon by repeating the first value
+                const r = [...values, values[0]];
+                const theta = [...axisLabels, axisLabels[0]];
+
+                return {
+                    type: 'scatterpolar',
+                    r: r,
+                    theta: theta,
+                    fill: 'toself',
+                    fillcolor: clusterColors[clusterId] + '33',
+                    line: { color: clusterColors[clusterId], width: 2 },
+                    name: clusterNames[clusterId] || `Cluster ${clusterId}`,
+                    hovertemplate: '%{theta}: %{r:.1f}<extra></extra>'
+                };
+            });
+
+            const layout = {
+                ...darkLayout,
+                polar: {
+                    radialaxis: {
+                        visible: true,
+                        range: [0, 10],
+                        tickfont: { color: '#888' },
+                        gridcolor: 'rgba(255,255,255,0.1)'
+                    },
+                    angularaxis: {
+                        tickfont: { color: '#e8e8e8', size: 12 },
+                        gridcolor: 'rgba(255,255,255,0.1)'
+                    },
+                    bgcolor: 'rgba(0,0,0,0.2)'
+                },
+                showlegend: false,
+                margin: { t: 60, r: 80, b: 60, l: 80 }
+            };
+
+            Plotly.newPlot('radar-plot', traces, layout, { responsive: true });
+
+            // Build legend
+            const radarLegendHtml = clusterIds.map(id =>
+                `<div class="legend-item">
+                    <div class="legend-color" style="background: ${clusterColors[id]}"></div>
+                    <span>${clusterNames[id] || 'Cluster ' + id}</span>
+                </div>`
+            ).join('');
+            document.getElementById('radar-legend').innerHTML = radarLegendHtml;
+
+            // Build cluster characteristics text
+            let charHtml = '<div style="display: flex; flex-wrap: wrap; gap: 20px;">';
+            clusterIds.forEach(clusterId => {
+                const centroid = centroids[String(clusterId)];
+                const name = clusterNames[clusterId] || `Cluster ${clusterId}`;
+                const desc = clusterDescriptions[clusterId] || '';
+                const count = tracks.filter(t => t.cluster === clusterId).length;
+
+                // Find high and low features
+                const sortedFeatures = axes.map(axis => ({ axis, val: centroid[axis] }))
+                    .sort((a, b) => b.val - a.val);
+                const highFeature = sortedFeatures[0];
+                const lowFeature = sortedFeatures[sortedFeatures.length - 1];
+
+                charHtml += `
+                    <div style="flex: 1; min-width: 250px; background: rgba(255,255,255,0.03); padding: 15px; border-radius: 10px; border-left: 3px solid ${clusterColors[clusterId]}">
+                        <div style="font-weight: 600; color: #e8e8e8; margin-bottom: 5px;">${name}</div>
+                        <div style="color: #888; font-size: 0.9rem; line-height: 1.5; margin-bottom: 8px;">${desc}</div>
+                        <div style="color: #667eea; font-size: 0.85rem;">
+                            <strong>High:</strong> ${highFeature.axis} (${highFeature.val.toFixed(1)})
+                            &nbsp;|&nbsp;
+                            <strong>Low:</strong> ${lowFeature.axis} (${lowFeature.val.toFixed(1)})
+                        </div>
+                        <div style="color: #666; font-size: 0.8rem; margin-top: 6px;">${count} tracks</div>
+                    </div>
+                `;
+            });
+            charHtml += '</div>';
+            document.getElementById('cluster-characteristics').innerHTML = charHtml;
+        }
+
+        // Component Loadings
+        function createLoadingsView() {
+            // Bar chart of loadings
+            const loadingsTraces = [
+                {
+                    x: loadings.features,
+                    y: loadings.pc1,
+                    name: 'PC1',
+                    type: 'bar',
+                    marker: { color: '#667eea' }
+                },
+                {
+                    x: loadings.features,
+                    y: loadings.pc2,
+                    name: 'PC2',
+                    type: 'bar',
+                    marker: { color: '#f093fb' }
+                },
+                {
+                    x: loadings.features,
+                    y: loadings.pc3,
+                    name: 'PC3',
+                    type: 'bar',
+                    marker: { color: '#4facfe' }
+                }
+            ];
+
+            const loadingsLayout = {
+                ...darkLayout,
+                title: 'Component Loadings',
+                barmode: 'group',
+                xaxis: { ...darkLayout.xaxis, title: 'Axis' },
+                yaxis: { ...darkLayout.yaxis, title: 'Loading Value' },
+                showlegend: false,
+                autosize: true,
+                margin: { t: 50, r: 30, b: 60, l: 60 }
+            };
+
+            Plotly.newPlot('loadings-bar', loadingsTraces, loadingsLayout, { responsive: true });
+
+            // Build external legend for loadings
+            const loadingsLegendHtml = [
+                { name: 'PC1', color: '#667eea' },
+                { name: 'PC2', color: '#f093fb' },
+                { name: 'PC3', color: '#4facfe' }
+            ].map(item =>
+                `<div class="legend-item">
+                    <div class="legend-color" style="background: ${item.color}"></div>
+                    <span>${item.name}</span>
+                </div>`
+            ).join('');
+            document.getElementById('loadings-legend').innerHTML = loadingsLegendHtml;
+
+            // Variance explained bar
+            const varianceTrace = {
+                x: variance.pc,
+                y: variance.variance,
+                type: 'bar',
+                marker: {
+                    color: variance.variance.map((v, i) =>
+                        `rgba(102, 126, 234, ${1 - i * 0.15})`
+                    )
+                },
+                text: variance.variance.map(v => v.toFixed(1) + '%'),
+                textposition: 'outside',
+                name: 'Individual'
+            };
+
+            const cumulativeTrace = {
+                x: variance.pc,
+                y: variance.cumulative,
+                type: 'scatter',
+                mode: 'lines+markers',
+                name: 'Cumulative',
+                yaxis: 'y2',
+                line: { color: '#f093fb', width: 2 },
+                marker: { size: 8 }
+            };
+
+            const varianceLayout = {
+                ...darkLayout,
+                title: 'Variance Explained by Component',
+                xaxis: { ...darkLayout.xaxis, title: 'Principal Component' },
+                yaxis: { ...darkLayout.yaxis, title: 'Variance Explained (%)', range: [0, 60] },
+                yaxis2: {
+                    title: 'Cumulative (%)',
+                    overlaying: 'y',
+                    side: 'right',
+                    range: [0, 105],
+                    gridcolor: 'rgba(255,255,255,0)',
+                    titlefont: { color: '#f093fb' },
+                    tickfont: { color: '#f093fb' }
+                },
+                showlegend: false,
+                autosize: true,
+                margin: { t: 50, r: 60, b: 60, l: 60 }
+            };
+
+            Plotly.newPlot('variance-bar', [varianceTrace, cumulativeTrace], varianceLayout, { responsive: true });
+
+            // Build external legend for variance
+            const varianceLegendHtml = [
+                { name: 'Individual', color: '#667eea' },
+                { name: 'Cumulative', color: '#f093fb' }
+            ].map(item =>
+                `<div class="legend-item">
+                    <div class="legend-color" style="background: ${item.color}"></div>
+                    <span>${item.name}</span>
+                </div>`
+            ).join('');
+            document.getElementById('variance-legend').innerHTML = varianceLegendHtml;
+
+            // Interpretation
+            let interpretation = '<ul style="line-height: 1.8; padding-left: 20px;">';
+
+            // PC1 interpretation
+            const pc1Sorted = loadings.features.map((f, i) => ({ feat: f, val: loadings.pc1[i] }))
+                .sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
+            interpretation += `<li><strong style="color:#667eea">PC1 (${variance.variance[0].toFixed(1)}%):</strong> Primarily driven by `;
+            interpretation += pc1Sorted.slice(0, 2).map(p =>
+                `${p.feat} (${p.val > 0 ? '+' : ''}${p.val.toFixed(2)})`
+            ).join(', ');
+            interpretation += '</li>';
+
+            // PC2 interpretation
+            const pc2Sorted = loadings.features.map((f, i) => ({ feat: f, val: loadings.pc2[i] }))
+                .sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
+            interpretation += `<li><strong style="color:#f093fb">PC2 (${variance.variance[1].toFixed(1)}%):</strong> Primarily driven by `;
+            interpretation += pc2Sorted.slice(0, 2).map(p =>
+                `${p.feat} (${p.val > 0 ? '+' : ''}${p.val.toFixed(2)})`
+            ).join(', ');
+            interpretation += '</li>';
+
+            // PC3 interpretation
+            const pc3Sorted = loadings.features.map((f, i) => ({ feat: f, val: loadings.pc3[i] }))
+                .sort((a, b) => Math.abs(b.val) - Math.abs(a.val));
+            interpretation += `<li><strong style="color:#4facfe">PC3 (${variance.variance[2].toFixed(1)}%):</strong> Primarily driven by `;
+            interpretation += pc3Sorted.slice(0, 2).map(p =>
+                `${p.feat} (${p.val > 0 ? '+' : ''}${p.val.toFixed(2)})`
+            ).join(', ');
+            interpretation += '</li>';
+
+            interpretation += `<li><strong>Total:</strong> First 3 components explain ${variance.cumulative[2].toFixed(1)}% of variance</li>`;
+            interpretation += '</ul>';
+
+            document.getElementById('component-interpretation').innerHTML = interpretation;
+        }
+
+        // Terrain Explorer (merged scatter with centroids)
+        function updateTerrainScatter() {
+            const xAxis = document.getElementById('terrain-x-axis').value;
+            const yAxis = document.getElementById('terrain-y-axis').value;
+
+            const clusterIds = [...new Set(tracks.map(t => t.cluster))].sort((a,b) => a-b);
+            const traces = clusterIds.map(clusterId => {
+                const clusterTracks = tracks.filter(t => t.cluster === clusterId);
+                return {
+                    x: clusterTracks.map(t => t[xAxis]),
+                    y: clusterTracks.map(t => t[yAxis]),
+                    mode: 'markers',
+                    type: 'scatter',
+                    name: clusterNames[clusterId] || `Cluster ${clusterId}`,
+                    text: clusterTracks.map(t => `${t.name}<br>${t.artist}`),
+                    customdata: clusterTracks,
+                    marker: {
+                        size: 12,
+                        color: clusterColors[clusterId],
+                        opacity: 0.7,
+                        line: { width: 1, color: 'rgba(255,255,255,0.3)' }
+                    },
+                    hovertemplate: '%{text}<extra></extra>'
+                };
+            });
+
+            // Add centroid markers (use String key for JSON compatibility)
+            clusterIds.forEach((clusterId) => {
+                const centroid = centroids[String(clusterId)];
+                if (centroid) {
+                    traces.push({
+                        x: [centroid[xAxis]],
+                        y: [centroid[yAxis]],
+                        mode: 'markers',
+                        type: 'scatter',
+                        name: `Centroid ${clusterId}`,
+                        marker: {
+                            size: 20,
+                            color: clusterColors[clusterId],
+                            symbol: 'x',
+                            line: { width: 3, color: '#fff' }
+                        },
+                        showlegend: false,
+                        hoverinfo: 'skip'
+                    });
+                }
+            });
+
+            const layout = {
+                ...darkLayout,
+                title: `${xAxis.charAt(0).toUpperCase() + xAxis.slice(1)} vs ${yAxis.charAt(0).toUpperCase() + yAxis.slice(1)}`,
+                xaxis: { ...darkLayout.xaxis, title: xAxis.charAt(0).toUpperCase() + xAxis.slice(1), range: [0, 11] },
+                yaxis: { ...darkLayout.yaxis, title: yAxis.charAt(0).toUpperCase() + yAxis.slice(1), range: [0, 11] },
+                showlegend: false,
+                autosize: true,
+                margin: { t: 50, r: 30, b: 60, l: 60 }
+            };
+
+            Plotly.newPlot('terrain-scatter', traces, layout, { responsive: true });
+
+            // Build external legend for terrain scatter
+            const terrainLegendHtml = clusterIds.map(id =>
+                `<div class="legend-item">
+                    <div class="legend-color" style="background: ${clusterColors[id]}"></div>
+                    <span>${clusterNames[id] || 'Cluster ' + id}</span>
+                </div>`
+            ).join('');
+            document.getElementById('terrain-legend').innerHTML = terrainLegendHtml;
+
+            document.getElementById('terrain-scatter').on('plotly_click', function(data) {
+                if (data.points[0].customdata) {
+                    showTrackCard(data.points[0].customdata, 'track-card-terrain');
+                }
+            });
+        }
+
+        // Playlist functionality
+        let currentLayout = 'radar';
+
+        // Virtual scrolling state
+        const CARD_HEIGHT = 160; // Estimated height per card row (including gap)
+        const BUFFER_ROWS = 3;   // Extra rows above/below viewport
+        let currentFilteredTracks = [];
+        let lastVisibleRange = { start: -1, end: -1 };
+        let playlistScrollHandler = null;
+
+        // Check for truncated text and add is-truncated class
+        function markTruncatedText(container) {
+            const titles = container.querySelectorAll('.playlist-card-title');
+            const artists = container.querySelectorAll('.playlist-card-artist');
+
+            titles.forEach(el => {
+                const span = el.querySelector('span');
+                if (span && span.scrollWidth > el.clientWidth) {
+                    el.classList.add('is-truncated');
+                } else {
+                    el.classList.remove('is-truncated');
+                }
+            });
+
+            artists.forEach(el => {
+                const span = el.querySelector('span');
+                if (span && span.scrollWidth > el.clientWidth) {
+                    el.classList.add('is-truncated');
+                } else {
+                    el.classList.remove('is-truncated');
+                }
+            });
+        }
+
+        // Generate mini SVG radar chart for a track
+        function createMiniRadar(track) {
+            const size = 65;
+            const cx = size / 2;
+            const cy = size / 2;
+            const maxR = size / 2 - 4;
+            const axes = ['warmth', 'spatiality', 'distance', 'density', 'groundedness'];
+            const angleStep = (2 * Math.PI) / axes.length;
+            const startAngle = -Math.PI / 2; // Start at top
+
+            // Build polygon points for the track values
+            const points = axes.map((axis, i) => {
+                const val = track[axis] / 10; // Normalize to 0-1
+                const r = val * maxR;
+                const angle = startAngle + i * angleStep;
+                return `${cx + r * Math.cos(angle)},${cy + r * Math.sin(angle)}`;
+            }).join(' ');
+
+            // Build axis lines and labels
+            const axisLines = axes.map((axis, i) => {
+                const angle = startAngle + i * angleStep;
+                const x2 = cx + maxR * Math.cos(angle);
+                const y2 = cy + maxR * Math.sin(angle);
+                return `<line x1="${cx}" y1="${cy}" x2="${x2}" y2="${y2}" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>`;
+            }).join('');
+
+            // Build colored dots at each axis point
+            const dots = axes.map((axis, i) => {
+                const val = track[axis] / 10;
+                const r = val * maxR;
+                const angle = startAngle + i * angleStep;
+                const x = cx + r * Math.cos(angle);
+                const y = cy + r * Math.sin(angle);
+                return `<circle cx="${x}" cy="${y}" r="2.5" fill="${axisColors[axis]}"/>`;
+            }).join('');
+
+            return `
+                <svg class="mini-radar" viewBox="0 0 ${size} ${size}" width="${size}" height="${size}">
+                    <!-- Background pentagon -->
+                    <polygon points="${axes.map((_, i) => {
+                        const angle = startAngle + i * angleStep;
+                        return `${cx + maxR * Math.cos(angle)},${cy + maxR * Math.sin(angle)}`;
+                    }).join(' ')}" fill="rgba(255,255,255,0.05)" stroke="rgba(255,255,255,0.15)" stroke-width="0.5"/>
+                    <!-- Axis lines -->
+                    ${axisLines}
+                    <!-- Data polygon -->
+                    <polygon points="${points}" fill="rgba(100,149,237,0.3)" stroke="rgba(100,149,237,0.8)" stroke-width="1"/>
+                    <!-- Axis dots -->
+                    ${dots}
+                </svg>
+            `;
+        }
+
+        function initPlaylist() {
+            // Populate cluster filter dropdown
+            const clusterSelect = document.getElementById('playlist-cluster');
+            const clusterIds = [...new Set(tracks.map(t => t.cluster))].sort((a, b) => a - b);
+            clusterIds.forEach(id => {
+                const option = document.createElement('option');
+                option.value = id;
+                option.textContent = clusterNames[id] || `Cluster ${id}`;
+                clusterSelect.appendChild(option);
+            });
+
+            // Add event listeners
+            document.getElementById('playlist-search').addEventListener('input', renderPlaylist);
+            document.getElementById('playlist-sort').addEventListener('change', renderPlaylist);
+            document.getElementById('playlist-cluster').addEventListener('change', renderPlaylist);
+
+            // Initial render
+            renderPlaylist();
+        }
+
+        function getFilteredSortedTracks() {
+            const searchTerm = document.getElementById('playlist-search').value.toLowerCase();
+            const sortValue = document.getElementById('playlist-sort').value;
+            const clusterFilter = document.getElementById('playlist-cluster').value;
+
+            let filtered = [...tracks];
+
+            // Filter by search
+            if (searchTerm) {
+                filtered = filtered.filter(t =>
+                    t.name.toLowerCase().includes(searchTerm) ||
+                    t.artist.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // Filter by cluster
+            if (clusterFilter !== 'all') {
+                filtered = filtered.filter(t => t.cluster === parseInt(clusterFilter));
+            }
+
+            // Sort
+            const [sortKey, sortDir] = sortValue.split('-');
+            filtered.sort((a, b) => {
+                let valA, valB;
+                if (sortKey === 'name' || sortKey === 'artist') {
+                    valA = a[sortKey].toLowerCase();
+                    valB = b[sortKey].toLowerCase();
+                    return sortDir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                } else {
+                    valA = a[sortKey];
+                    valB = b[sortKey];
+                    return sortDir === 'asc' ? valA - valB : valB - valA;
+                }
+            });
+
+            return filtered;
+        }
+
+        // Generate HTML for a single playlist card
+        function createCardHtml(track, index) {
+            const hasArt = track.album_art && track.album_art.length > 0;
+            const hasAudio = track.file_path && track.file_path.length > 0;
+
+            const axisNames = {
+                warmth: 'Warmth',
+                spatiality: 'Spatiality',
+                distance: 'Distance',
+                density: 'Density',
+                groundedness: 'Groundedness'
+            };
+
+            const tooltipRows = ['warmth', 'spatiality', 'distance', 'density', 'groundedness'].map(axis => `
+                <div class="radar-tooltip-row">
+                    <div class="radar-tooltip-dot" style="background: ${axisColors[axis]}"></div>
+                    <span class="radar-tooltip-label">${axisNames[axis]}</span>
+                    <span class="radar-tooltip-value">${track[axis].toFixed(1)}</span>
+                </div>
+            `).join('');
+
+            return `
+                <div class="playlist-card" data-track-index="${index}">
+                    ${hasArt ? `<img class="playlist-card-art" src="${track.album_art}" loading="lazy" onerror="this.style.display='none'" alt="">` : '<div class="playlist-card-art"></div>'}
+                    <div class="playlist-card-content">
+                        <div class="playlist-card-main">
+                            <div class="playlist-card-info">
+                                <div class="playlist-card-title" title="${track.name}"><span>${track.name}</span></div>
+                                <div class="playlist-card-artist" title="${track.artist}"><span>${track.artist}</span></div>
+                                <div class="playlist-card-cluster" style="background: ${clusterColors[track.cluster]}33">
+                                    <div class="playlist-card-cluster-dot" style="background: ${clusterColors[track.cluster]}"></div>
+                                    ${clusterNames[track.cluster] || 'Cluster ' + track.cluster}
+                                </div>
+                            </div>
+                            <div class="radar-container">
+                                <div class="radar-tooltip">${tooltipRows}</div>
+                                ${createMiniRadar(track)}
+                            </div>
+                        </div>
+                        ${hasAudio ? `
+                        <div class="audio-player" data-src="${track.file_path}">
+                            <button class="audio-play-btn" type="button">
+                                <svg class="play-icon" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+                                <svg class="pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                            </button>
+                            <div class="audio-progress-container">
+                                <div class="audio-progress-bar"><div class="audio-progress-handle"></div></div>
+                            </div>
+                            <span class="audio-time">0:00</span>
+                            <audio preload="none" src="${track.file_path}"></audio>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Render visible cards in the playlist (virtualized with incremental updates)
+        function renderVisibleCards(forceFullRender = false) {
+            const grid = document.getElementById('playlist-grid');
+            const viewport = grid.querySelector('.playlist-viewport');
+            if (!viewport || currentFilteredTracks.length === 0) return;
+
+            const scrollTop = grid.scrollTop;
+            const containerHeight = grid.clientHeight;
+            const totalTracks = currentFilteredTracks.length;
+
+            // Calculate visible range
+            const cardsPerRow = Math.max(1, Math.floor(grid.clientWidth / 336)); // 320px min + 16px gap
+            const rowsInViewport = Math.ceil(containerHeight / CARD_HEIGHT);
+            const startRow = Math.max(0, Math.floor(scrollTop / CARD_HEIGHT) - BUFFER_ROWS);
+            const endRow = Math.min(
+                Math.ceil(totalTracks / cardsPerRow),
+                Math.floor(scrollTop / CARD_HEIGHT) + rowsInViewport + BUFFER_ROWS
+            );
+
+            const startIndex = startRow * cardsPerRow;
+            const endIndex = Math.min(totalTracks - 1, (endRow + 1) * cardsPerRow - 1);
+
+            // Check if playing track scrolled out of view
+            if (AudioManager.currentTrackId) {
+                const playingTrackIndex = currentFilteredTracks.findIndex(t =>
+                    t.file_path === AudioManager.currentTrackId
+                );
+                if (playingTrackIndex !== -1 && (playingTrackIndex < startIndex || playingTrackIndex > endIndex)) {
+                    AudioManager.stop();
+                }
+            }
+
+            // Skip if range hasn't changed
+            if (!forceFullRender && lastVisibleRange.start === startIndex && lastVisibleRange.end === endIndex) {
+                return;
+            }
+
+            const oldStart = lastVisibleRange.start;
+            const oldEnd = lastVisibleRange.end;
+            lastVisibleRange = { start: startIndex, end: endIndex };
+
+            // Update top padding for correct positioning
+            viewport.style.paddingTop = (startRow * CARD_HEIGHT) + 'px';
+
+            // Full render on first load or forced
+            if (forceFullRender || oldStart === -1) {
+                const visibleTracks = currentFilteredTracks.slice(startIndex, endIndex + 1);
+                viewport.innerHTML = visibleTracks.map((track, i) => createCardHtml(track, startIndex + i)).join('');
+                requestAnimationFrame(() => markTruncatedText(viewport));
+                return;
+            }
+
+            // Incremental update: only add/remove cards at edges
+            // Remove cards that scrolled out of view at the top
+            if (startIndex > oldStart) {
+                const removeCount = Math.min(startIndex - oldStart, viewport.children.length);
+                for (let i = 0; i < removeCount; i++) {
+                    if (viewport.firstChild) viewport.removeChild(viewport.firstChild);
+                }
+            }
+
+            // Remove cards that scrolled out of view at the bottom
+            if (endIndex < oldEnd) {
+                const removeCount = Math.min(oldEnd - endIndex, viewport.children.length);
+                for (let i = 0; i < removeCount; i++) {
+                    if (viewport.lastChild) viewport.removeChild(viewport.lastChild);
+                }
+            }
+
+            // Add new cards at the top (scrolling up)
+            if (startIndex < oldStart) {
+                const addCount = Math.min(oldStart - startIndex, oldStart);
+                const fragment = document.createDocumentFragment();
+                for (let i = startIndex; i < startIndex + addCount; i++) {
+                    const track = currentFilteredTracks[i];
+                    if (track) {
+                        const temp = document.createElement('div');
+                        temp.innerHTML = createCardHtml(track, i);
+                        fragment.appendChild(temp.firstElementChild);
+                    }
+                }
+                viewport.insertBefore(fragment, viewport.firstChild);
+            }
+
+            // Add new cards at the bottom (scrolling down)
+            if (endIndex > oldEnd) {
+                const addStart = Math.max(oldEnd + 1, startIndex);
+                const fragment = document.createDocumentFragment();
+                for (let i = addStart; i <= endIndex; i++) {
+                    const track = currentFilteredTracks[i];
+                    if (track) {
+                        const temp = document.createElement('div');
+                        temp.innerHTML = createCardHtml(track, i);
+                        fragment.appendChild(temp.firstElementChild);
+                    }
+                }
+                viewport.appendChild(fragment);
+            }
+
+            // Mark truncated text on any newly added cards
+            requestAnimationFrame(() => markTruncatedText(viewport));
+        }
+
+        function renderPlaylist() {
+            // Stop any playing audio when re-rendering (sort/filter changes)
+            AudioManager.stop();
+
+            currentFilteredTracks = getFilteredSortedTracks();
+            const grid = document.getElementById('playlist-grid');
+            document.getElementById('playlist-showing').textContent = currentFilteredTracks.length;
+
+            // Reset visible range
+            lastVisibleRange = { start: -1, end: -1 };
+
+            // Calculate total height and setup virtual scroll container
+            const cardsPerRow = Math.max(1, Math.floor(grid.clientWidth / 336));
+            const totalRows = Math.ceil(currentFilteredTracks.length / cardsPerRow);
+            const totalHeight = totalRows * CARD_HEIGHT;
+
+            // Create spacer and viewport structure
+            grid.innerHTML = `
+                <div class="playlist-spacer" style="height: ${totalHeight}px;">
+                    <div class="playlist-viewport"></div>
+                </div>
+            `;
+
+            // Reset scroll position
+            grid.scrollTop = 0;
+
+            // Remove old scroll handler
+            if (playlistScrollHandler) {
+                grid.removeEventListener('scroll', playlistScrollHandler);
+            }
+
+            // Create throttled scroll handler
+            let scrollTimeout = null;
+            playlistScrollHandler = function() {
+                if (scrollTimeout) return;
+                scrollTimeout = requestAnimationFrame(() => {
+                    renderVisibleCards();
+                    scrollTimeout = null;
+                });
+            };
+
+            grid.addEventListener('scroll', playlistScrollHandler);
+
+            // Initial render
+            renderVisibleCards();
+        }
+
+        // Format time in m:ss format
+        function formatTime(seconds) {
+            if (isNaN(seconds) || !isFinite(seconds)) return '0:00';
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        // Initialize everything when DOM is ready
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Load data from API first
+            try {
+                await loadData();
+
+                // Custom audio player event handlers (using event delegation)
+                document.addEventListener('click', function(e) {
+                    // Play/pause button
+                    const playBtn = e.target.closest('.audio-play-btn');
+                    if (playBtn) {
+                        const player = playBtn.closest('.audio-player');
+                        const audio = player.querySelector('audio');
+
+                        if (audio.paused) {
+                            // Stop any currently playing audio
+                            AudioManager.stop();
+                            // Remove playing class from all other players
+                            document.querySelectorAll('.audio-player.playing').forEach(p => {
+                                p.classList.remove('playing');
+                            });
+                            // Play this track
+                            AudioManager.play(audio, audio.src);
+                            audio.play();
+                            player.classList.add('playing');
+                        } else {
+                            audio.pause();
+                            player.classList.remove('playing');
+                        }
+                        return;
+                    }
+
+                    // Progress bar seeking (click only - drag handled separately)
+                    const progressContainer = e.target.closest('.audio-progress-container');
+                    if (progressContainer) {
+                        const player = progressContainer.closest('.audio-player');
+                        const audio = player.querySelector('audio');
+                        const rect = progressContainer.getBoundingClientRect();
+                        const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                        if (audio.duration && isFinite(audio.duration)) {
+                            audio.currentTime = percent * audio.duration;
+                        }
+                        return;
+                    }
+                });
+
+                // Drag scrubbing for progress bar handle
+                let scrubbing = { active: false, player: null, audio: null, container: null };
+
+                document.addEventListener('mousedown', function(e) {
+                    const handle = e.target.closest('.audio-progress-handle');
+                    const progressContainer = e.target.closest('.audio-progress-container');
+                    if (handle || progressContainer) {
+                        const container = handle ? handle.closest('.audio-progress-container') : progressContainer;
+                        const player = container.closest('.audio-player');
+                        const audio = player.querySelector('audio');
+
+                        scrubbing = { active: true, player, audio, container };
+                        player.classList.add('scrubbing');
+                        e.preventDefault();
+                    }
+                });
+
+                document.addEventListener('mousemove', function(e) {
+                    if (!scrubbing.active) return;
+
+                    const rect = scrubbing.container.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+
+                    // Update visual progress immediately
+                    const progressBar = scrubbing.player.querySelector('.audio-progress-bar');
+                    progressBar.style.width = (percent * 100) + '%';
+
+                    // Update time display
+                    if (scrubbing.audio.duration && isFinite(scrubbing.audio.duration)) {
+                        const time = percent * scrubbing.audio.duration;
+                        scrubbing.player.querySelector('.audio-time').textContent = formatTime(time);
+                    }
+                });
+
+                document.addEventListener('mouseup', function(e) {
+                    if (!scrubbing.active) return;
+
+                    const rect = scrubbing.container.getBoundingClientRect();
+                    const percent = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+
+                    // Set the audio time
+                    if (scrubbing.audio.duration && isFinite(scrubbing.audio.duration)) {
+                        scrubbing.audio.currentTime = percent * scrubbing.audio.duration;
+                    }
+
+                    scrubbing.player.classList.remove('scrubbing');
+                    scrubbing = { active: false, player: null, audio: null, container: null };
+                });
+
+                // Audio time update - update progress bar and time display
+                document.addEventListener('timeupdate', function(e) {
+                    if (e.target.tagName === 'AUDIO') {
+                        const audio = e.target;
+                        const player = audio.closest('.audio-player');
+                        if (player) {
+                            const progressBar = player.querySelector('.audio-progress-bar');
+                            const timeDisplay = player.querySelector('.audio-time');
+
+                            if (audio.duration && isFinite(audio.duration)) {
+                                const percent = (audio.currentTime / audio.duration) * 100;
+                                progressBar.style.width = percent + '%';
+                                timeDisplay.textContent = formatTime(audio.currentTime);
+                            }
+                        }
+                    }
+                }, true);
+
+                // Audio ended - reset player state
+                document.addEventListener('ended', function(e) {
+                    if (e.target.tagName === 'AUDIO') {
+                        const audio = e.target;
+                        const player = audio.closest('.audio-player');
+                        if (player) {
+                            player.classList.remove('playing');
+                            const progressBar = player.querySelector('.audio-progress-bar');
+                            const timeDisplay = player.querySelector('.audio-time');
+                            progressBar.style.width = '0%';
+                            timeDisplay.textContent = '0:00';
+                        }
+                        AudioManager.stop();
+                    }
+                }, true);
+
+                // Also handle play events for AudioManager coordination
+                document.addEventListener('play', function(e) {
+                    if (e.target.tagName === 'AUDIO') {
+                        const player = e.target.closest('.audio-player');
+                        if (player) {
+                            // Remove playing class from all other players
+                            document.querySelectorAll('.audio-player.playing').forEach(p => {
+                                if (p !== player) p.classList.remove('playing');
+                            });
+                            player.classList.add('playing');
+                        }
+                        AudioManager.play(e.target, e.target.src);
+                    }
+                }, true)
+
+                // Add event listeners for terrain explorer (need these before first visit)
+                document.getElementById('terrain-x-axis').addEventListener('change', function() {
+                    if (viewsInitialized.terrain) updateTerrainScatter();
+                });
+                document.getElementById('terrain-y-axis').addEventListener('change', function() {
+                    if (viewsInitialized.terrain) updateTerrainScatter();
+                });
+            } catch (error) {
+                console.error('Failed to initialize app:', error);
+            }
+        });
+    </script>
+</body>
+</html>
